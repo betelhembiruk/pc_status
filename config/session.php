@@ -1,8 +1,7 @@
 <?php
-session_start();
+// /config/session.php
 
-if (!isset($_SESSION["user"])) {
-    header("Location: /projects/PC_STATUS/frontend/login.php");
-    exit;
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
 }
 ?>
