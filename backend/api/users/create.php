@@ -1,28 +1,37 @@
 <?php
 header("Content-Type: application/json");
 
-require_once __DIR__ . "/../../config/db.php";
-require_once __DIR__ . "/../../middleware/auth.php";
+require_once $_SERVER['DOCUMENT_ROOT'] . "/projects/PC_STATUS/config/db.php";
 
 $data = json_decode(file_get_contents("php://input"), true);
 
-if ($_SESSION["user"]["role"] !== "super_admin") {
-    echo json_encode(["success"=>false,"message"=>"No permission"]);
+$full_name = trim($data["full_name"] ?? "");
+$password = trim($data["password"] ?? "");
+$role = $data["role"] ?? "user";
+
+if ($full_name === "" || $password === "") {
+    echo json_encode(["success"=>false,"message"=>"Missing fields"]);
     exit;
 }
 
+/* NEW USERS MUST CHANGE PASSWORD */
+$must_change_password = 1;
+
 $stmt = $conn->prepare("
-    INSERT INTO users(full_name,email,password,role)
-    VALUES (?,?,?,?)
+    INSERT INTO users (full_name, password, role, must_change_password)
+    VALUES (?, ?, ?, ?)
 ");
 
-$stmt->bind_param(
-    "ssss",
-    $data["full_name"],
-    $data["email"],
-    $data["password"],
-    $data["role"]
-);
+$stmt->bind_param("sssi", $full_name, $password, $role, $must_change_password);
 
-echo json_encode(["success"=>$stmt->execute()]);
-?>
+if ($stmt->execute()) {
+    echo json_encode([
+        "success" => true,
+        "message" => "User created successfully"
+    ]);
+} else {
+    echo json_encode([
+        "success" => false,
+        "message" => $stmt->error
+    ]);
+}

@@ -1,61 +1,58 @@
-<?php session_start(); ?>
-
 <!DOCTYPE html>
 <html>
 <head>
-    <title>PC STATUS Login</title>
+    <title>Login</title>
+</head>
 
-    <!-- CSS -->
-<link rel="stylesheet" href="assets/css/style.css"></head>
+<body style="display:flex;justify-content:center;align-items:center;height:100vh;background:#f4f4f7;">
 
-<body>
+<div style="background:white;padding:30px;border-radius:10px;width:320px;">
 
-<div class="login-container">
+    <h2 style="text-align:center;color:#95298e;">Login</h2>
 
-    <h2>Login</h2>
+    <input id="full_name" placeholder="Full Name"
+        style="width:100%;padding:10px;margin-bottom:10px;">
 
-    <input type="email" id="email" placeholder="Email">
-    <input type="password" id="password" placeholder="Password">
+    <input id="password" type="password" placeholder="Password"
+        style="width:100%;padding:10px;margin-bottom:10px;">
 
-    <button onclick="login()">Login</button>
-
-    <p id="msg"></p>
+    <button onclick="login()"
+        style="width:100%;padding:10px;background:#95298e;color:white;border:none;">
+        Login
+    </button>
 
 </div>
 
 <script>
-async function login() {
+function login() {
 
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
+    fetch("/projects/PC_STATUS/backend/api/auth/login.php", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            full_name: document.getElementById("full_name").value,
+            password: document.getElementById("password").value
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
 
-    try {
-        const res = await fetch("/projects/PC_STATUS/backend/api/auth/login.php", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                email: email,
-                password: password
-            })
-        });
-
-        const text = await res.text();
-        console.log("RAW RESPONSE:", text);
-
-        const data = JSON.parse(text);
-
-        if (data.success) {
-            window.location.href = "/projects/PC_STATUS/frontend/pages/dashboard.php";
-        } else {
-            document.getElementById("msg").innerText = data.message;
+        if (!data.success) {
+            alert(data.message);
+            return;
         }
 
-    } catch (error) {
-        console.error(error);
-        alert("Login failed - check backend");
-    }
+        // 🚨 ONLY admin + user must change password
+        if (data.must_change_password) {
+            window.location.href =
+                "/projects/PC_STATUS/frontend/pages/change-password.php?id=" + data.user.id;
+            return;
+        }
+
+        window.location.href =
+            "/projects/PC_STATUS/frontend/pages/users.php";
+    })
+    .catch(err => console.log(err));
 }
 </script>
 

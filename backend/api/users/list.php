@@ -1,10 +1,21 @@
 <?php
 header("Content-Type: application/json");
 
-require_once "../../config/db.php";
-require_once "../../middleware/auth.php";
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
 
-$result = $conn->query("SELECT id, full_name, email, role, created_at FROM users");
+require_once $_SERVER['DOCUMENT_ROOT'] . "/projects/PC_STATUS/config/db.php";
+
+$sql = "SELECT id, full_name, role, status, created_at, last_login FROM users ORDER BY id DESC";
+$result = $conn->query($sql);
+
+if (!$result) {
+    echo json_encode([
+        "success" => false,
+        "message" => $conn->error
+    ]);
+    exit;
+}
 
 $users = [];
 
@@ -13,4 +24,3 @@ while ($row = $result->fetch_assoc()) {
 }
 
 echo json_encode($users);
-?>
