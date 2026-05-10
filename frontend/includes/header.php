@@ -1,4 +1,4 @@
-<?php require_once "../../backend/config/session.php"; ?>
+<?php require_once __DIR__ . "/../../config/session.php"; ?>
 
 <!DOCTYPE html>
 <html>
