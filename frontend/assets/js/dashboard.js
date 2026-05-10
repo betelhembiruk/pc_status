@@ -1,4 +1,5 @@
-fetch("../../backend/api/dashboard/stats.php")
+
+fetch("/projects/PC_STATUS/backend/api/dashboard/stats.php")
 .then(res => res.json())
 .then(data => {
 
@@ -6,6 +7,9 @@ fetch("../../backend/api/dashboard/stats.php")
     document.getElementById("open").innerText = data.open;
     document.getElementById("progress").innerText = data.progress;
     document.getElementById("resolved").innerText = data.resolved;
+
+
+    
 
     const ctx = document.getElementById("chart").getContext("2d");
 

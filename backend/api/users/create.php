@@ -1,25 +1,28 @@
 <?php
 header("Content-Type: application/json");
 
-require_once "../../config/db.php";
-require_once "../../middleware/auth.php";
-require_once "../../middleware/role.php";
-
-requireRole(["super_admin"]);
+require_once __DIR__ . "/../../config/db.php";
+require_once __DIR__ . "/../../middleware/auth.php";
 
 $data = json_decode(file_get_contents("php://input"), true);
 
-$hash = password_hash($data["password"], PASSWORD_BCRYPT);
+if ($_SESSION["user"]["role"] !== "super_admin") {
+    echo json_encode(["success"=>false,"message"=>"No permission"]);
+    exit;
+}
 
-$stmt = $conn->prepare("INSERT INTO users(full_name,email,password,role) VALUES (?,?,?,?)");
-$stmt->bind_param("ssss",
+$stmt = $conn->prepare("
+    INSERT INTO users(full_name,email,password,role)
+    VALUES (?,?,?,?)
+");
+
+$stmt->bind_param(
+    "ssss",
     $data["full_name"],
     $data["email"],
-    $hash,
+    $data["password"],
     $data["role"]
 );
 
-$stmt->execute();
-
-echo json_encode(["success" => true]);
+echo json_encode(["success"=>$stmt->execute()]);
 ?>
