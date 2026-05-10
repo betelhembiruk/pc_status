@@ -1,5 +1,6 @@
 <?php
 header("Content-Type: application/json");
+
 ini_set('display_errors', 0);
 error_reporting(0);
 
@@ -18,11 +19,34 @@ if (!$id) {
     exit;
 }
 
-/* ================= STATUS ONLY UPDATE ================= */
+/* ===================================================
+   1. STATUS UPDATE ONLY
+=================================================== */
 if ($status) {
 
-    $stmt = $conn->prepare("UPDATE tickets SET status=? WHERE id=?");
-    $stmt->bind_param("si", $status, $id);
+    // 🔴 CLOSED → set returned time
+    if ($status === "Closed") {
+
+        $stmt = $conn->prepare("
+            UPDATE tickets 
+            SET status=?, returned_at=NOW() 
+            WHERE id=?
+        ");
+
+        $stmt->bind_param("si", $status, $id);
+    }
+
+    // 🟢 ACTIVE or 🟡 PENDING → CLEAR returned time
+    else {
+
+        $stmt = $conn->prepare("
+            UPDATE tickets 
+            SET status=?, returned_at=NULL 
+            WHERE id=?
+        ");
+
+        $stmt->bind_param("si", $status, $id);
+    }
 
     if ($stmt->execute()) {
         echo json_encode([
@@ -31,12 +55,19 @@ if ($status) {
             "status"=>$status
         ]);
     } else {
-        echo json_encode(["success"=>false,"message"=>$stmt->error]);
+        echo json_encode([
+            "success"=>false,
+            "message"=>$stmt->error
+        ]);
     }
+
     exit;
 }
 
-/* ================= FULL UPDATE ================= */
+/* ===================================================
+   2. FULL UPDATE (ticket-view.php)
+=================================================== */
+
 $serialNumber = $_POST['serialNumber'] ?? '';
 $tagNumber = $_POST['tagNumber'] ?? '';
 $pcModel = $_POST['pcModel'] ?? '';
@@ -87,9 +118,15 @@ $id
 );
 
 if ($stmt->execute()) {
-    echo json_encode(["success"=>true,"message"=>"Updated"]);
+    echo json_encode([
+        "success"=>true,
+        "message"=>"Ticket updated successfully"
+    ]);
 } else {
-    echo json_encode(["success"=>false,"message"=>$stmt->error]);
+    echo json_encode([
+        "success"=>false,
+        "message"=>$stmt->error
+    ]);
 }
 
 $stmt->close();

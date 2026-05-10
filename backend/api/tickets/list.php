@@ -23,8 +23,8 @@ while ($row = $result->fetch_assoc()) {
         "broughtBy" => $row["broughtBy"],
         "hardwareType" => $row["hardwareType"] ?? "PC",
         "status" => $row["status"] ?? "Pending",
-        "createdAt" => $row["created_at"] ?? null,
-        "returnedAt" => $row["returned_at"] ?? null
+       "createdAt" => $row["created_at"] ?? null,
+    "returnedAt" => $row["returned_at"] ?? null
     ];
 }
 

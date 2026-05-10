@@ -55,17 +55,18 @@ Close
 
 let tickets = [];
 
-/* LOAD */
+/* ================= LOAD ================= */
 function loadTickets() {
     fetch("/projects/PC_STATUS/backend/api/tickets/list.php")
     .then(res => res.json())
     .then(data => {
         tickets = data;
         render(data);
-    });
+    })
+    .catch(err => console.log("LOAD ERROR:", err));
 }
 
-/* RENDER */
+/* ================= RENDER ================= */
 function render(data) {
 
     let html = "";
@@ -74,7 +75,7 @@ function render(data) {
 
         const id = t.id;
 
-        let color =
+        let statusColor =
             t.status === "Closed" ? "#10b981" :
             t.status === "Active" ? "#3b82f6" :
             "#f59e0b";
@@ -90,13 +91,13 @@ function render(data) {
             <td>${t.problem || "-"}</td>
 
             <td>
-                <span style="background:${color};color:white;padding:4px 8px;border-radius:20px;">
-                    ${t.status}
+                <span style="background:${statusColor};color:white;padding:4px 8px;border-radius:20px;">
+                    ${t.status || "Pending"}
                 </span>
             </td>
 
-            <td>${t.createdAt || "-"}</td>
-            <td>${t.returnedAt || "-"}</td>
+            <td>${t.createdAt ? new Date(t.createdAt).toLocaleString() : "-"}</td>
+            <td>${t.returnedAt ? new Date(t.returnedAt).toLocaleString() : "-"}</td>
 
             <td onclick="event.stopPropagation()" style="display:flex;gap:5px;flex-wrap:wrap">
 
@@ -125,32 +126,33 @@ function render(data) {
                     🖨️
                 </button>
 
-                <!-- EDIT BUTTON (REPLACED VIEW) -->
                 <button onclick="editTicket(${id})"
                     style="background:#95298e;color:white;border:none;padding:5px;">
                     Edit
                 </button>
 
             </td>
-        </tr>`;
+
+        </tr>
+        `;
     });
 
     document.getElementById("ticketsBody").innerHTML = html;
 }
 
-/* SEARCH FIX */
+/* ================= SEARCH (FIXED) ================= */
 document.getElementById("search").addEventListener("input", function() {
 
     const v = this.value.toLowerCase();
 
     const filtered = tickets.filter(t =>
-        JSON.stringify(t).toLowerCase().includes(v)
+        Object.values(t).join(" ").toLowerCase().includes(v)
     );
 
     render(filtered);
 });
 
-/* STATUS FIX */
+/* ================= STATUS FIX (IMPORTANT) ================= */
 function setStatus(id, status) {
 
     fetch("/projects/PC_STATUS/backend/api/tickets/update-full.php", {
@@ -159,10 +161,16 @@ function setStatus(id, status) {
         body: new URLSearchParams({ id, status })
     })
     .then(res => res.json())
-    .then(() => loadTickets());
+    .then(data => {
+
+        console.log("STATUS RESPONSE:", data);
+
+        loadTickets();
+    })
+    .catch(err => console.log(err));
 }
 
-/* ASSIGN → SET PENDING */
+/* ================= ASSIGN ================= */
 function assignTicket(id) {
 
     const user = prompt("Assign to:");
@@ -177,10 +185,11 @@ function assignTicket(id) {
             assignedTo: user,
             status: "Pending"
         })
-    }).then(() => loadTickets());
+    })
+    .then(() => loadTickets());
 }
 
-/* PRINT */
+/* ================= PRINT ================= */
 function printTicket(id) {
 
     const t = tickets.find(x => x.id == id);
@@ -195,19 +204,18 @@ function printTicket(id) {
         <p>Model: ${t.pcModel}</p>
         <p>Problem: ${t.problem}</p>
         <p>Status: ${t.status}</p>
-        <button onclick="window.print()">Print</button>
     `);
 
     w.document.close();
 }
 
-/* EDIT (REPLACED VIEW) */
+/* ================= EDIT ================= */
 function editTicket(id) {
     window.location.href =
         "/projects/PC_STATUS/frontend/pages/ticket-view.php?id=" + id;
 }
 
-/* MODAL FULL FIX */
+/* ================= MODAL ================= */
 function openModal(id) {
 
     const t = tickets.find(x => x.id == id);
