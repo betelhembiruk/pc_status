@@ -1,27 +1,18 @@
 <?php
 header("Content-Type: application/json");
 
-// Show PHP errors while debugging
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-// Start session
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-/*
-|--------------------------------------------------------------------------
-| Database Connection
-|--------------------------------------------------------------------------
-| IMPORTANT:
-| This uses an absolute path to avoid relative path issues.
-*/
-require_once $_SERVER['DOCUMENT_ROOT'] . "/projects/PC_STATUS/config/db.php";/*
-|--------------------------------------------------------------------------
-| Check Login
-|--------------------------------------------------------------------------
-*/
+require_once $_SERVER['DOCUMENT_ROOT'] . "/projects/PC_STATUS/config/db.php";
+
+/* =========================
+   AUTH CHECK
+========================= */
 if (!isset($_SESSION["user"]["id"])) {
     echo json_encode([
         "success" => false,
@@ -30,29 +21,24 @@ if (!isset($_SESSION["user"]["id"])) {
     exit;
 }
 
-/*
-|--------------------------------------------------------------------------
-| Read JSON Input
-|--------------------------------------------------------------------------
-*/
+/* =========================
+   READ INPUT
+========================= */
 $raw = file_get_contents("php://input");
 $data = json_decode($raw, true);
 
 if (!$data) {
     echo json_encode([
         "success" => false,
-        "message" => "Invalid JSON data received.",
+        "message" => "Invalid JSON",
         "raw" => $raw
     ]);
     exit;
 }
 
-/*
-|--------------------------------------------------------------------------
-| Get Form Fields
-|--------------------------------------------------------------------------
-| Same field names used in your frontend form.
-*/
+/* =========================
+   FIELDS (MATCH FRONTEND)
+========================= */
 $serialNumber = trim($data["serialNumber"] ?? "");
 $tagNumber    = trim($data["tagNumber"] ?? "");
 $pcModel      = trim($data["pcModel"] ?? "");
@@ -62,70 +48,53 @@ $phone        = trim($data["phone"] ?? "");
 $broughtBy    = trim($data["broughtBy"] ?? "");
 $hardwareType = trim($data["hardwareType"] ?? "PC");
 
-/*
-|--------------------------------------------------------------------------
-| Default Values
-|--------------------------------------------------------------------------
-*/
-$status   = "Pending";
-$priority = "Medium";
-$slaDays  = 3;
-
 $createdBy = (int) $_SESSION["user"]["id"];
 
-/*
-|--------------------------------------------------------------------------
-| Validation
-|--------------------------------------------------------------------------
-*/
+/* =========================
+   VALIDATION
+========================= */
 if ($serialNumber === "" || $branch === "" || $problem === "") {
     echo json_encode([
         "success" => false,
-        "message" => "Required fields missing: Serial Number, Branch, and Problem."
+        "message" => "Serial Number, Branch and Problem are required"
     ]);
     exit;
 }
 
-/*
-|--------------------------------------------------------------------------
-| SQL Insert
-|--------------------------------------------------------------------------
-*/
-$sql = "
-    INSERT INTO tickets (
-        serialNumber,
-        tagNumber,
-        pcModel,
-        branch,
-        issue,
-        phone,
-        broughtBy,
-        hardwareType,
-        status,
-        priority,
-        slaDays,
-        created_by
-    )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-";
+/* =========================
+   STATUS LOGIC (IMPORTANT)
+   - NEW TICKET = Active
+========================= */
+$status = "Active";
+
+/* =========================
+   INSERT QUERY
+========================= */
+$sql = "INSERT INTO tickets (
+    serialNumber,
+    tagNumber,
+    pcModel,
+    branch,
+    issue,
+    phone,
+    broughtBy,
+    hardwareType,
+    status,
+    created_by
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
 $stmt = $conn->prepare($sql);
 
 if (!$stmt) {
     echo json_encode([
         "success" => false,
-        "message" => "Prepare failed: " . $conn->error
+        "message" => "SQL Error: " . $conn->error
     ]);
     exit;
 }
 
-/*
-|--------------------------------------------------------------------------
-| Bind Parameters
-|--------------------------------------------------------------------------
-*/
 $stmt->bind_param(
-    "ssssssssssii",
+    "sssssssssi",
     $serialNumber,
     $tagNumber,
     $pcModel,
@@ -135,34 +104,26 @@ $stmt->bind_param(
     $broughtBy,
     $hardwareType,
     $status,
-    $priority,
-    $slaDays,
     $createdBy
 );
 
-/*
-|--------------------------------------------------------------------------
-| Execute Query
-|--------------------------------------------------------------------------
-*/
+/* =========================
+   EXECUTE
+========================= */
 if ($stmt->execute()) {
     echo json_encode([
-        "success"   => true,
-        "message"   => "Ticket created successfully!",
-        "ticket_id" => $conn->insert_id
+        "success" => true,
+        "message" => "Ticket created successfully",
+        "ticket_id" => $conn->insert_id,
+        "status" => $status
     ]);
 } else {
     echo json_encode([
         "success" => false,
-        "message" => "Execute failed: " . $stmt->error
+        "message" => "Insert failed: " . $stmt->error
     ]);
 }
 
-/*
-|--------------------------------------------------------------------------
-| Cleanup
-|--------------------------------------------------------------------------
-*/
 $stmt->close();
 $conn->close();
 ?>

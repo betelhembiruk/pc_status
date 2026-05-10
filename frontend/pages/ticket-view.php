@@ -15,7 +15,7 @@ $ticket = $result->fetch_assoc();
 
 <div style="margin-left:220px; padding:20px; background:#f3f4f6; min-height:100vh;">
 
-<h2>Ticket View / Edit</h2>
+<h2 style="color:#95298e;">Ticket View / Edit</h2>
 
 <form id="ticketForm">
 
@@ -60,8 +60,11 @@ value="<?= $ticket['broughtBy'] ?>"><br><br>
     <option value="Closed" <?= $ticket['status']=="Closed"?"selected":"" ?>>Closed</option>
 </select><br><br>
 
-<input name="returnedBy" placeholder="Returned By"><br><br>
-<input name="returnedPerson" placeholder="Returned Person"><br><br>
+<input name="returnedBy" placeholder="Returned By"
+value="<?= $ticket['returnedBy'] ?? '' ?>"><br><br>
+
+<input name="returnedPerson" placeholder="Returned Person"
+value="<?= $ticket['returnedPerson'] ?? '' ?>"><br><br>
 
 </div>
 
@@ -70,15 +73,17 @@ value="<?= $ticket['broughtBy'] ?>"><br><br>
 <h3>Maintenance</h3>
 
 <label>
-    <input type="checkbox" name="maintenanceDone">
+    <input type="checkbox" name="maintenanceDone"
+    <?= !empty($ticket['maintenanceType']) ? "checked" : "" ?>>
     Maintenance Done
 </label><br><br>
 
-<input name="maintenanceType" placeholder="What was fixed?"><br><br>
+<input name="maintenanceType" placeholder="What was fixed?"
+value="<?= $ticket['maintenanceType'] ?? '' ?>"><br><br>
 
-<textarea name="maintenanceNotes" placeholder="Maintenance Notes"></textarea><br><br>
+<textarea name="maintenanceNotes" placeholder="Maintenance Notes"><?= $ticket['maintenanceNotes'] ?? '' ?></textarea><br><br>
 
-<textarea name="maintenanceReasonNotDone" placeholder="Why not maintained?"></textarea><br><br>
+<textarea name="maintenanceReasonNotDone" placeholder="Why not maintained?"><?= $ticket['maintenanceReasonNotDone'] ?? '' ?></textarea><br><br>
 
 </div>
 
@@ -108,6 +113,12 @@ document.getElementById("ticketForm").addEventListener("submit", function(e) {
 
     const formData = new FormData(this);
 
+    // FIX checkbox (important)
+    formData.set(
+        "maintenanceDone",
+        document.querySelector("input[name='maintenanceDone']").checked ? 1 : 0
+    );
+
     fetch("/projects/PC_STATUS/backend/api/tickets/update-full.php", {
         method: "POST",
         body: formData
@@ -116,8 +127,7 @@ document.getElementById("ticketForm").addEventListener("submit", function(e) {
     .then(data => {
 
         if (data.success) {
-            alert("Ticket updated successfully!");
-
+            // NO POPUP REQUIRED → clean redirect
             window.location.href =
                 "/projects/PC_STATUS/frontend/pages/tickets.php";
         } else {
