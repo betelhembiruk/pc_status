@@ -23,4 +23,7 @@ while ($row = $result->fetch_assoc()) {
     $users[] = $row;
 }
 
-echo json_encode($users);
+echo json_encode([
+    "success" => true,
+    "data" => $users
+]);

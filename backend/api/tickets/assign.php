@@ -1,13 +1,9 @@
 <?php
 header("Content-Type: application/json");
+require_once $_SERVER['DOCUMENT_ROOT'] . "/projects/PC_STATUS/config/db.php";
 
-require_once "../../config/db.php";
-require_once "../../middleware/auth.php";
-require_once "../../middleware/role.php";
-
-requireRole(["admin", "super_admin"]);
-
-$data = json_decode(file_get_contents("php://input"), true);
+$ticket_id = $_POST['ticket_id'];
+$user_id = $_POST['user_id'];
 
 $stmt = $conn->prepare("
     UPDATE tickets 
@@ -15,9 +11,6 @@ $stmt = $conn->prepare("
     WHERE id=?
 ");
 
-$stmt->bind_param("ii", $data["user_id"], $data["ticket_id"]);
+$stmt->bind_param("ii", $user_id, $ticket_id);
 
-$stmt->execute();
-
-echo json_encode(["success" => true]);
-?>
+echo json_encode(["success"=>$stmt->execute()]);
