@@ -42,15 +42,15 @@ function login() {
             return;
         }
 
-        // 🚨 ONLY admin + user must change password
+        // force password change
         if (data.must_change_password) {
             window.location.href =
                 "/projects/PC_STATUS/frontend/pages/change-password.php?id=" + data.user.id;
             return;
         }
 
-        window.location.href =
-            "/projects/PC_STATUS/frontend/pages/users.php";
+        // ✅ IMPORTANT FIX
+        window.location.href = data.dashboard;
     })
     .catch(err => console.log(err));
 }

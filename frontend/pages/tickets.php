@@ -283,10 +283,52 @@ function printTicket(id) {
 function openModal(id) {
     const t = tickets.find(x => x.id == id);
 
-    document.getElementById("modal").style.display = "flex";
+    const modal = document.getElementById("modal");
+    const content = document.getElementById("modalContent");
 
-    document.getElementById("modalContent").innerHTML = `
-        <p>${t.problem}</p>
+    // ✅ FIX: make modal container scroll-safe
+    modal.style.display = "flex";
+    modal.style.alignItems = "center";
+    modal.style.justifyContent = "center";
+
+    // 👇 IMPORTANT: ensure scroll inside box works
+    modal.style.overflow = "hidden";
+
+    content.style.maxHeight = "85vh";
+    content.style.overflowY = "auto";
+    content.style.paddingRight = "5px";
+
+    content.innerHTML = `
+
+        <!-- BASIC INFO -->
+        <div style="background:#f9fafb;padding:10px;border-radius:8px;margin-bottom:10px;">
+            <h3>Basic Information</h3>
+            <p><b>Serial:</b> ${t.serialNumber || '-'}</p>
+            <p><b>Tag:</b> ${t.tagNumber || '-'}</p>
+            <p><b>Model:</b> ${t.pcModel || '-'}</p>
+            <p><b>Branch:</b> ${t.branch || '-'}</p>
+            <p><b>Problem:</b> ${t.problem || '-'}</p>
+            <p><b>Phone:</b> ${t.phone || '-'}</p>
+            <p><b>Brought By:</b> ${t.broughtBy || '-'}</p>
+        </div>
+
+        <!-- RETURN DETAILS -->
+        <div style="background:#f9fafb;padding:10px;border-radius:8px;margin-bottom:10px;">
+            <h3>Return Details</h3>
+            <p><b>Status:</b> ${t.status || 'Pending'}</p>
+            <p><b>Returned By:</b> ${t.returnedBy || '-'}</p>
+            <p><b>Returned Person:</b> ${t.returnedPerson || '-'}</p>
+        </div>
+
+        <!-- MAINTENANCE -->
+        <div style="background:#f9fafb;padding:10px;border-radius:8px;">
+            <h3>Maintenance</h3>
+            <p><b>Done:</b> ${t.maintenanceType ? 'Yes' : 'No'}</p>
+            <p><b>Type:</b> ${t.maintenanceType || '-'}</p>
+            <p><b>Notes:</b> ${t.maintenanceNotes || '-'}</p>
+            <p><b>Reason Not Done:</b> ${t.maintenanceReasonNotDone || '-'}</p>
+        </div>
+
     `;
 }
 

@@ -1,16 +1,40 @@
 <?php
+session_start();
 include "../includes/header.php";
 include "../includes/sidebar.php";
 require_once $_SERVER['DOCUMENT_ROOT'] . "/projects/PC_STATUS/config/db.php";
 
-$id = $_GET['id'];
+/* ================= GET USER ================= */
+$user = $_SESSION['user'] ?? null;
 
+if (!$user) {
+    header("Location: /projects/PC_STATUS/frontend/login.php");
+    exit;
+}
+
+$role = $user['role'];
+$userId = $user['id'];
+
+$id = $_GET['id'] ?? 0;
+
+/* ================= GET TICKET ================= */
 $stmt = $conn->prepare("SELECT * FROM tickets WHERE id=?");
 $stmt->bind_param("i", $id);
 $stmt->execute();
-
 $result = $stmt->get_result();
 $ticket = $result->fetch_assoc();
+
+/* ================= SECURITY CHECK ================= */
+if (!$ticket) {
+    echo "Ticket not found";
+    exit;
+}
+
+/* 👇 USERS CAN ONLY OPEN THEIR ASSIGNED TICKETS */
+if ($role === "user" && $ticket['assigned_to'] != $userId) {
+    echo "🚫 You are not allowed to access this ticket";
+    exit;
+}
 ?>
 
 <div style="margin-left:220px; padding:20px; background:#f3f4f6; min-height:100vh;">
@@ -27,26 +51,13 @@ $ticket = $result->fetch_assoc();
 <div style="background:white;padding:15px;border-radius:10px;">
 <h3>Basic Information</h3>
 
-<input name="serialNumber" placeholder="Serial Number"
-value="<?= $ticket['serialNumber'] ?>"><br><br>
-
-<input name="tagNumber" placeholder="Tag Number"
-value="<?= $ticket['tagNumber'] ?>"><br><br>
-
-<input name="pcModel" placeholder="PC Model"
-value="<?= $ticket['pcModel'] ?>"><br><br>
-
-<input name="branch" placeholder="Branch"
-value="<?= $ticket['branch'] ?>"><br><br>
-
-<input name="problem" placeholder="Problem"
-value="<?= $ticket['issue'] ?>"><br><br>
-
-<input name="phone" placeholder="Phone"
-value="<?= $ticket['phone'] ?>"><br><br>
-
-<input name="broughtBy" placeholder="Brought By"
-value="<?= $ticket['broughtBy'] ?>"><br><br>
+<input name="serialNumber" value="<?= $ticket['serialNumber'] ?>"><br><br>
+<input name="tagNumber" value="<?= $ticket['tagNumber'] ?>"><br><br>
+<input name="pcModel" value="<?= $ticket['pcModel'] ?>"><br><br>
+<input name="branch" value="<?= $ticket['branch'] ?>"><br><br>
+<input name="problem" value="<?= $ticket['issue'] ?>"><br><br>
+<input name="phone" value="<?= $ticket['phone'] ?>"><br><br>
+<input name="broughtBy" value="<?= $ticket['broughtBy'] ?>"><br><br>
 
 </div>
 
@@ -60,11 +71,8 @@ value="<?= $ticket['broughtBy'] ?>"><br><br>
     <option value="Closed" <?= $ticket['status']=="Closed"?"selected":"" ?>>Closed</option>
 </select><br><br>
 
-<input name="returnedBy" placeholder="Returned By"
-value="<?= $ticket['returnedBy'] ?? '' ?>"><br><br>
-
-<input name="returnedPerson" placeholder="Returned Person"
-value="<?= $ticket['returnedPerson'] ?? '' ?>"><br><br>
+<input name="returnedBy" value="<?= $ticket['returnedBy'] ?? '' ?>"><br><br>
+<input name="returnedPerson" value="<?= $ticket['returnedPerson'] ?? '' ?>"><br><br>
 
 </div>
 
@@ -78,12 +86,11 @@ value="<?= $ticket['returnedPerson'] ?? '' ?>"><br><br>
     Maintenance Done
 </label><br><br>
 
-<input name="maintenanceType" placeholder="What was fixed?"
-value="<?= $ticket['maintenanceType'] ?? '' ?>"><br><br>
+<input name="maintenanceType" value="<?= $ticket['maintenanceType'] ?? '' ?>"><br><br>
 
-<textarea name="maintenanceNotes" placeholder="Maintenance Notes"><?= $ticket['maintenanceNotes'] ?? '' ?></textarea><br><br>
+<textarea name="maintenanceNotes"><?= $ticket['maintenanceNotes'] ?? '' ?></textarea><br><br>
 
-<textarea name="maintenanceReasonNotDone" placeholder="Why not maintained?"><?= $ticket['maintenanceReasonNotDone'] ?? '' ?></textarea><br><br>
+<textarea name="maintenanceReasonNotDone"><?= $ticket['maintenanceReasonNotDone'] ?? '' ?></textarea>
 
 </div>
 
@@ -104,7 +111,6 @@ Save Changes
 </button>
 
 </form>
-
 </div>
 
 <script>
@@ -113,7 +119,6 @@ document.getElementById("ticketForm").addEventListener("submit", function(e) {
 
     const formData = new FormData(this);
 
-    // FIX checkbox (important)
     formData.set(
         "maintenanceDone",
         document.querySelector("input[name='maintenanceDone']").checked ? 1 : 0
@@ -127,17 +132,12 @@ document.getElementById("ticketForm").addEventListener("submit", function(e) {
     .then(data => {
 
         if (data.success) {
-            // NO POPUP REQUIRED → clean redirect
             window.location.href =
                 "/projects/PC_STATUS/frontend/pages/tickets.php";
         } else {
             alert(data.message || "Update failed");
         }
 
-    })
-    .catch(err => {
-        console.log(err);
-        alert("Server error");
     });
 });
 </script>

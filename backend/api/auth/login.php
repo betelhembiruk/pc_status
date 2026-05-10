@@ -24,12 +24,6 @@ if ($full_name === "" || $password === "") {
 
 /* ================= FIND USER ================= */
 $stmt = $conn->prepare("SELECT * FROM users WHERE full_name=?");
-
-if (!$stmt) {
-    echo json_encode(["success"=>false,"message"=>$conn->error]);
-    exit;
-}
-
 $stmt->bind_param("s", $full_name);
 $stmt->execute();
 
@@ -49,18 +43,21 @@ if ($password !== $user["password"]) {
 /* ================= SESSION ================= */
 $_SESSION["user"] = $user;
 
-/* ================= LAST LOGIN ================= */
+/* ================= UPDATE LAST LOGIN ================= */
 $conn->query("UPDATE users SET last_login = NOW() WHERE id={$user['id']}");
 
-/* ================= ROLE LOGIC ================= */
-$forceChange =
-    ($user["role"] !== "super_admin") &&
-    ($user["must_change_password"] == 1);
+/* ================= DASHBOARD ROUTE ================= */
+if ($user["role"] === "super_admin" || $user["role"] === "admin") {
+    $dashboard = "/projects/PC_STATUS/frontend/pages/dashboard.php";
+} else {
+    $dashboard = "/projects/PC_STATUS/frontend/pages/user-dashboard.php";
+}
 
 /* ================= RESPONSE ================= */
 echo json_encode([
     "success" => true,
-    "must_change_password" => $forceChange,
+    "must_change_password" => ($user["must_change_password"] == 1),
+    "dashboard" => $dashboard,
     "user" => [
         "id" => $user["id"],
         "full_name" => $user["full_name"],
